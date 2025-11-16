@@ -52,4 +52,4 @@ export const ratelimit = createRatelimiter();
 
 // Endpoint-specific rate limiters
 export const strictRatelimit = new InMemoryRatelimit(5, 60 * 1000); // 5 per minute
-export const authRatelimit = new InMemoryRatelimit(3, 60 * 1000); // 3 per minute
+export const authRatelimit = new InMemoryRatelimit(15, 60 * 1000); // 15 per minute

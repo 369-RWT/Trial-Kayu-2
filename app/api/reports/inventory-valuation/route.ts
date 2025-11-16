@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const targetDate = date ? new Date(date) : new Date();
     targetDate.setHours(0, 0, 0, 0);
 
-    // Calculate date range (last 30 days)
+    // Calculate 30 days ago for report period
     const thirtyDaysAgo = new Date(targetDate);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
