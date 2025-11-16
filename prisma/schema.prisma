@@ -1,0 +1,342 @@
+// META-FRAMEWORK V2: Multi-Wood-Type Precision Costing System
+// Al Fath Kayu - Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// MASTER DATA
+// ============================================================================
+
+model WoodType {
+  id            Int      @id @default(autoincrement())
+  woodCode      String   @unique // JT, MR, MH, SG, KP, JL
+  woodName      String   // Jati, Meranti, Mahoni, Sengon, Kamper, Jali
+  avgWasteRate  Float    @default(0.0) // Historical average
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  logs                  LogInventory[]
+  inventoryValuations   InventoryValuation[]
+  batchLineItems        BatchLineItem[]
+  logConsumptions       LogConsumption[]
+  productionOutputs     ProductionOutput[]
+  wasteDeviations       WasteDeviation[]
+  productPricing        ProductPricing[]
+  supplierPerformances  SupplierWoodPerformance[]
+
+  @@map("wood_types")
+}
+
+model Supplier {
+  id            Int      @id @default(autoincrement())
+  supplierCode  String   @unique // SUP01, SUP02, etc.
+  supplierName  String
+  contactPerson String?
+  phone         String?
+  address       String?
+  paymentTerms  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  logs                  LogInventory[]
+  logConsumptions       LogConsumption[]
+  wasteDeviations       WasteDeviation[]
+  supplierPerformances  SupplierWoodPerformance[]
+
+  @@map("suppliers")
+}
+
+model Product {
+  id              Int      @id @default(autoincrement())
+  productCode     String   @unique
+  productName     String   // Horizontal Beams, Balok Struktural, Papan Cor
+  machineTypeId   Int?
+  standardWasteRate Float  @default(0.0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  machineType       MachineType?     @relation(fields: [machineTypeId], references: [id])
+  batchLineItems    BatchLineItem[]
+  productionOutputs ProductionOutput[]
+  productPricing    ProductPricing[]
+
+  @@map("products")
+}
+
+model MachineType {
+  id            Int      @id @default(autoincrement())
+  machineName   String   @unique
+  description   String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  products        Product[]
+  batchLineItems  BatchLineItem[]
+
+  @@map("machine_types")
+}
+
+model Worker {
+  id            Int      @id @default(autoincrement())
+  workerCode    String   @unique
+  workerName    String
+  phone         String?
+  position      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  batchLineItems  BatchLineItem[]
+  wasteDeviations WasteDeviation[]
+
+  @@map("workers")
+}
+
+model ProductPricing {
+  id                  Int      @id @default(autoincrement())
+  productId           Int
+  woodTypeId          Int
+  sellingPricePerKubik Float
+  effectiveDate       DateTime
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  product   Product  @relation(fields: [productId], references: [id])
+  woodType  WoodType @relation(fields: [woodTypeId], references: [id])
+
+  @@unique([productId, woodTypeId, effectiveDate])
+  @@map("product_pricing")
+}
+
+// ============================================================================
+// LOG INVENTORY & VALUATION
+// ============================================================================
+
+model LogInventory {
+  id                Int      @id @default(autoincrement())
+  logTag            String   @unique // JT-SUP01-20251102-001
+  woodTypeId        Int
+  supplierId        Int
+  purchaseDate      DateTime
+  lingkarCm         Float    // Circumference in cm
+  panjangM          Float    // Length in meters
+  jumlahLog         Int      // Number of logs
+  kubikasiTotal     Float    // Total kubikasi before FLOOR
+  kubikasiFinal     Float    // FLOOR(kubikasiTotal)
+  hargaPerKubik     Float    // Purchase price per kubik
+  totalCost         Float    // kubikasiFinal × hargaPerKubik
+  status            String   @default("Available") // Available, Partial, Consumed
+  remainingKubikasi Float    // Tracks remaining inventory
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  woodType        WoodType        @relation(fields: [woodTypeId], references: [id])
+  supplier        Supplier        @relation(fields: [supplierId], references: [id])
+  logConsumptions LogConsumption[]
+  wasteDeviations WasteDeviation[]
+
+  @@index([woodTypeId, status])
+  @@index([purchaseDate])
+  @@map("log_inventory")
+}
+
+model InventoryValuation {
+  id                 Int      @id @default(autoincrement())
+  woodTypeId         Int
+  valuationDate      DateTime
+  openingKubikasi    Float
+  openingValue       Float
+  purchaseKubikasi   Float
+  purchaseValue      Float
+  consumedKubikasi   Float
+  consumedValue      Float
+  closingKubikasi    Float
+  closingValue       Float
+  wacPerKubik        Float    // Weighted Average Cost
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  woodType WoodType @relation(fields: [woodTypeId], references: [id])
+
+  @@unique([woodTypeId, valuationDate])
+  @@map("inventory_valuations")
+}
+
+// ============================================================================
+// PRODUCTION BATCHES
+// ============================================================================
+
+model ProductionBatch {
+  id              String   @id // B-20251103-001
+  productionDate  DateTime
+  shift           Int      // 1 or 2
+  status          String   @default("Planned") // Planned, In-Progress, Completed
+  createdById     Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  batchLineItems BatchLineItem[]
+
+  @@index([productionDate, status])
+  @@map("production_batches")
+}
+
+model BatchLineItem {
+  id                      Int      @id @default(autoincrement())
+  batchId                 String
+  lineNumber              Int
+  woodTypeId              Int
+  productId               Int
+  targetKubikasi          Float
+  actualOutputKubikasi    Float?
+  totalInputKubikasi      Float?
+  totalWasteKubikasi      Float?
+  wacPerKubik             Float    // Locked at batch start
+  materialCostDirect      Float?
+  materialCostWaste       Float?
+  materialCostTotal       Float?
+  materialCostPerKubik    Float?
+  workerId                Int?
+  machineTypeId           Int?
+  sellingPricePerKubik    Float?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relations
+  batch               ProductionBatch     @relation(fields: [batchId], references: [id])
+  woodType            WoodType            @relation(fields: [woodTypeId], references: [id])
+  product             Product             @relation(fields: [productId], references: [id])
+  worker              Worker?             @relation(fields: [workerId], references: [id])
+  machineType         MachineType?        @relation(fields: [machineTypeId], references: [id])
+  logConsumptions     LogConsumption[]
+  productionOutputs   ProductionOutput[]
+  wasteDeviations     WasteDeviation[]
+
+  @@unique([batchId, lineNumber])
+  @@index([woodTypeId, productId])
+  @@map("batch_line_items")
+}
+
+model LogConsumption {
+  id                  Int      @id @default(autoincrement())
+  batchLineId         Int
+  logTag              String
+  woodTypeId          Int      // Denormalized for reporting
+  supplierId          Int      // Denormalized for reporting
+  purchaseDate        DateTime // Denormalized for aging analysis
+  kubikasiConsumed    Float
+  wacPerKubik         Float
+  materialCost        Float
+  consumptionTimestamp DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  batchLineItem BatchLineItem @relation(fields: [batchLineId], references: [id])
+  logInventory  LogInventory  @relation(fields: [logTag], references: [logTag])
+  woodType      WoodType      @relation(fields: [woodTypeId], references: [id])
+  supplier      Supplier      @relation(fields: [supplierId], references: [id])
+
+  @@index([batchLineId])
+  @@index([logTag])
+  @@map("log_consumptions")
+}
+
+model ProductionOutput {
+  id                          Int      @id @default(autoincrement())
+  batchLineId                 Int
+  woodTypeId                  Int
+  productId                   Int
+  kubikasiProduced            Float
+  materialCostDirect          Float
+  materialCostAllocatedWaste  Float
+  totalMaterialCost           Float
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  // Relations
+  batchLineItem BatchLineItem @relation(fields: [batchLineId], references: [id])
+  woodType      WoodType      @relation(fields: [woodTypeId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
+
+  @@map("production_outputs")
+}
+
+model WasteDeviation {
+  id                Int      @id @default(autoincrement())
+  batchLineId       Int
+  logTag            String
+  consumptionId     Int?
+  woodTypeId        Int      // Denormalized
+  supplierId        Int      // Denormalized
+  workerId          Int?
+  wasteType         String   // Bent, Hollow, Crack, Method
+  kubikasiWaste     Float
+  wasteCost         Float
+  disposition       String   // Scrap, Resale, Alternative
+  recoveryValue     Float    @default(0.0)
+  netWasteCost      Float
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  batchLineItem BatchLineItem @relation(fields: [batchLineId], references: [id])
+  logInventory  LogInventory  @relation(fields: [logTag], references: [logTag])
+  woodType      WoodType      @relation(fields: [woodTypeId], references: [id])
+  supplier      Supplier      @relation(fields: [supplierId], references: [id])
+  worker        Worker?       @relation(fields: [workerId], references: [id])
+
+  @@index([batchLineId])
+  @@index([woodTypeId, wasteType])
+  @@map("waste_deviations")
+}
+
+// ============================================================================
+// PERFORMANCE ANALYTICS
+// ============================================================================
+
+model SupplierWoodPerformance {
+  id                  Int      @id @default(autoincrement())
+  supplierId          Int
+  woodTypeId          Int
+  periodStart         DateTime
+  periodEnd           DateTime
+  totalKubikasi       Float
+  totalWasteKubikasi  Float
+  wasteRate           Float
+  qualityScore        Int?
+  bentWoodPct         Float    @default(0.0)
+  hollowCenterPct     Float    @default(0.0)
+  crackPct            Float    @default(0.0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  supplier  Supplier  @relation(fields: [supplierId], references: [id])
+  woodType  WoodType  @relation(fields: [woodTypeId], references: [id])
+
+  @@unique([supplierId, woodTypeId, periodStart, periodEnd])
+  @@map("supplier_wood_performances")
+}
