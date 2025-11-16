@@ -22,6 +22,10 @@ export async function GET(request: NextRequest) {
     const targetDate = date ? new Date(date) : new Date();
     targetDate.setHours(0, 0, 0, 0);
 
+    // Calculate date range (last 30 days)
+    const thirtyDaysAgo = new Date(targetDate);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     // Get all wood types
     const woodTypes = await prisma.woodType.findMany({
       where: { isActive: true },
@@ -60,9 +64,6 @@ export async function GET(request: NextRequest) {
         const wac = totalKubikasi > 0 ? totalValue / totalKubikasi : 0;
 
         // Get purchase summary for date range (last 30 days)
-        const thirtyDaysAgo = new Date(targetDate);
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
         const recentPurchases = await prisma.logInventory.findMany({
           where: {
             woodTypeId: woodType.id,
