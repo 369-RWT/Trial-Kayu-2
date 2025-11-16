@@ -139,14 +139,20 @@ export default function ProductionBatchesClient({ batches }: Props) {
         {/* Mobile Card View - Visible only on mobile */}
         <div className="md:hidden space-y-4 p-4">
           {filteredBatches.map((batch) => (
-            <div key={batch.id} className="bg-neutral-50 rounded-lg p-4 space-y-3 border border-neutral-200">
+            <div
+              key={batch.id}
+              className="bg-white rounded-xl p-5 space-y-4 border border-neutral-200/60 animate-fade-in"
+              style={{
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)'
+              }}
+            >
               {/* Header */}
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="font-mono text-sm font-bold text-neutral-900">
+                  <div className="font-mono text-base font-bold text-neutral-900 tracking-tight">
                     Batch #{batch.id}
                   </div>
-                  <div className="text-sm text-neutral-600 mt-1">
+                  <div className="text-sm text-neutral-600 mt-2 font-medium">
                     {formatDateShort(batch.productionDate)} • Shift {batch.shift}
                   </div>
                 </div>
@@ -156,13 +162,13 @@ export default function ProductionBatchesClient({ batches }: Props) {
               </div>
 
               {/* Line Items */}
-              <div>
-                <div className="text-neutral-500 text-xs mb-2">Line Items</div>
-                <div className="flex flex-wrap gap-1">
+              <div className="pt-2">
+                <div className="text-neutral-500 text-xs font-semibold uppercase tracking-wide mb-2">Line Items</div>
+                <div className="flex flex-wrap gap-2">
                   {batch.batchLineItems.map((item, idx) => (
                     <span
                       key={idx}
-                      className="text-xs bg-neutral-200 px-2 py-1 rounded"
+                      className="text-xs bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/50 px-2.5 py-1 rounded-md font-semibold shadow-sm"
                     >
                       {item.woodType.woodCode} → {item.product.productCode}
                     </span>
@@ -173,7 +179,7 @@ export default function ProductionBatchesClient({ batches }: Props) {
               {/* Action Button */}
               <Link
                 href={`/production/batches/${batch.id}`}
-                className="block w-full text-center btn btn-outline text-sm py-2"
+                className="block w-full text-center btn btn-outline text-sm py-2.5 mt-2"
               >
                 View Details
               </Link>

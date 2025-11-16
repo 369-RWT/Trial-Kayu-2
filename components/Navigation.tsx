@@ -32,19 +32,25 @@ export default function Navigation() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
-    <nav className="bg-white border-b border-neutral-200 sticky top-0 z-50 shadow-sm" aria-label="Main navigation">
+    <nav
+      className="bg-white/95 backdrop-blur-md border-b border-neutral-200/60 sticky top-0 z-50"
+      style={{
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)'
+      }}
+      aria-label="Main navigation"
+    >
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
-            <div className="bg-primary-600 text-white p-2 rounded-lg">
+          <Link href="/" className="flex items-center space-x-3 group">
+            <div className="bg-gradient-to-br from-primary-600 to-primary-700 text-white p-2 rounded-xl shadow-md transition-all duration-200 group-hover:shadow-lg group-hover:scale-105">
               <Package className="h-5 w-5" />
             </div>
             <div className="hidden sm:block">
-              <div className="font-bold text-lg text-neutral-900">
+              <div className="font-bold text-lg text-neutral-900 tracking-tight">
                 Al Fath Kayu
               </div>
-              <div className="text-xs text-neutral-600">Costing System</div>
+              <div className="text-xs text-neutral-600 font-medium">Costing System</div>
             </div>
           </Link>
 
@@ -61,14 +67,14 @@ export default function Navigation() {
                     key={item.name}
                     href={item.href}
                     className={cn(
-                      "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                      "flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200",
                       isActive
-                        ? "bg-primary-50 text-primary-700"
-                        : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900"
+                        ? "bg-gradient-to-br from-primary-50 to-primary-100/50 text-primary-700 shadow-sm"
+                        : "text-neutral-700 hover:bg-neutral-100/80 hover:text-neutral-900"
                     )}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span>{item.name}</span>
+                    <span className="tracking-tight">{item.name}</span>
                   </Link>
                 );
               })}
