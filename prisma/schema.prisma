@@ -340,3 +340,85 @@ model SupplierWoodPerformance {
   @@unique([supplierId, woodTypeId, periodStart, periodEnd])
   @@map("supplier_wood_performances")
 }
+// Add to existing schema.prisma AFTER WoodType model
+
+// ============================================================================
+// AUTHENTICATION & AUTHORIZATION
+// ============================================================================
+
+model User {
+  id            Int      @id @default(autoincrement())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String   @default("VIEWER") // ADMIN, MANAGER, OPERATOR, VIEWER
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  sessions      Session[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+  @@index([role, isActive])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       Int
+  sessionToken String   @unique
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionToken])
+  @@map("sessions")
+}
+
+// ============================================================================
+// AUDIT LOGGING
+// ============================================================================
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int?
+  action      String   // CREATE, UPDATE, DELETE, VIEW
+  entity      String   // LogInventory, ProductionBatch, etc.
+  entityId    String?
+  changes     String?  // JSON string of changes
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// SYSTEM CONFIGURATION
+// ============================================================================
+
+model SystemConfig {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  dataType  String   // STRING, NUMBER, BOOLEAN, JSON
+  category  String   // CALCULATION, SECURITY, GENERAL
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_config")
+}
