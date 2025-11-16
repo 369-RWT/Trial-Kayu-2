@@ -2,6 +2,8 @@
 
 This guide explains how to deploy the Al Fath Kayu costing system on a local network for completely offline operation.
 
+> **📁 Note**: All deployment files are organized in the `deployment/` directory to keep them separate from the main application code. This guide assumes you are running commands from the project root directory (`Trial-Kayu-2/`).
+
 ## Prerequisites
 
 Before deployment, ensure you have the following installed on the server machine:
@@ -29,13 +31,13 @@ This is the easiest method using the provided deployment script.
 
 2. **Run the deployment script**:
    ```bash
-   ./scripts/deploy-local.sh
+   ./deployment/scripts/deploy-local.sh
    ```
 
 3. The script will:
    - Check for Docker installation
    - Detect your server's IP address
-   - Create `.env.production` from the template
+   - Create `deployment/.env.production` from the template
    - Build and start the application
    - Run database migrations
    - Optionally seed the database with sample data
@@ -56,10 +58,10 @@ If you prefer manual control over the deployment process:
 
 2. **Create environment file**:
    ```bash
-   cp .env.production.example .env.production
+   cp deployment/.env.production.example deployment/.env.production
    ```
 
-3. **Edit `.env.production`**:
+3. **Edit `deployment/.env.production`**:
    - Replace `localhost` with your server's IP address in `NEXTAUTH_URL`
    - Generate a secure random string for `NEXTAUTH_SECRET`:
      ```bash
@@ -68,17 +70,17 @@ If you prefer manual control over the deployment process:
 
 4. **Build and start containers**:
    ```bash
-   docker-compose up -d --build
+   docker compose -f deployment/docker-compose.production.yml up -d --build
    ```
 
 5. **Run database migrations**:
    ```bash
-   docker-compose exec app npx prisma migrate deploy
+   docker compose -f deployment/docker-compose.production.yml exec app npx prisma migrate deploy
    ```
 
 6. **Seed database** (optional):
    ```bash
-   docker-compose exec app npx prisma db seed
+   docker compose -f deployment/docker-compose.production.yml exec app npx prisma db seed
    ```
 
 ## Network Configuration
@@ -131,41 +133,45 @@ For reliable offline operation, configure a static IP for your server:
 
 ## Management Commands
 
+All commands should be run from the **project root** directory (`Trial-Kayu-2/`).
+
 ### View Application Logs
 ```bash
-docker-compose logs -f app
+docker compose -f deployment/docker-compose.production.yml logs -f app
 ```
 
 ### View Database Logs
 ```bash
-docker-compose logs -f postgres
+docker compose -f deployment/docker-compose.production.yml logs -f postgres
 ```
 
 ### Stop the Application
 ```bash
-docker-compose down
+docker compose -f deployment/docker-compose.production.yml down
 ```
 
 ### Restart the Application
 ```bash
-docker-compose restart
+docker compose -f deployment/docker-compose.production.yml restart
 ```
 
 ### Update the Application
 ```bash
 git pull origin main
-docker-compose up -d --build
-docker-compose exec app npx prisma migrate deploy
+docker compose -f deployment/docker-compose.production.yml up -d --build
+docker compose -f deployment/docker-compose.production.yml exec app npx prisma migrate deploy
 ```
 
 ### Backup Database
 ```bash
-docker-compose exec postgres pg_dump -U alfathkayu alfathkayu_db > backup_$(date +%Y%m%d_%H%M%S).sql
+docker compose -f deployment/docker-compose.production.yml exec postgres \
+  pg_dump -U alfathkayu alfathkayu_db > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ### Restore Database
 ```bash
-cat backup_file.sql | docker-compose exec -T postgres psql -U alfathkayu alfathkayu_db
+cat backup_file.sql | docker compose -f deployment/docker-compose.production.yml exec -T postgres \
+  psql -U alfathkayu alfathkayu_db
 ```
 
 ## Offline Operation
@@ -211,7 +217,7 @@ If you need to deploy on a machine without any internet access:
 
 1. Check if the application is running:
    ```bash
-   docker-compose ps
+   docker compose -f deployment/docker-compose.production.yml ps
    ```
 
 2. Check firewall settings:
@@ -221,29 +227,29 @@ If you need to deploy on a machine without any internet access:
 
 3. Verify the application is listening on all interfaces:
    ```bash
-   docker-compose logs app | grep "Ready"
+   docker compose -f deployment/docker-compose.production.yml logs app | grep "Ready"
    ```
 
 ### Database Connection Issues
 
 1. Check database status:
    ```bash
-   docker-compose exec postgres pg_isready -U alfathkayu
+   docker compose -f deployment/docker-compose.production.yml exec postgres pg_isready -U alfathkayu
    ```
 
 2. View database logs:
    ```bash
-   docker-compose logs postgres
+   docker compose -f deployment/docker-compose.production.yml logs postgres
    ```
 
 3. Restart database:
    ```bash
-   docker-compose restart postgres
+   docker compose -f deployment/docker-compose.production.yml restart postgres
    ```
 
 ### Port Already in Use
 
-If port 3000 or 5432 is already in use, edit `docker-compose.yml`:
+If port 3000 or 5432 is already in use, edit `deployment/docker-compose.production.yml`:
 
 ```yaml
 services:
@@ -257,8 +263,8 @@ services:
 For production deployment on a local network:
 
 1. **Change default passwords**:
-   - Update `POSTGRES_PASSWORD` in `docker-compose.yml`
-   - Update `DATABASE_URL` in `.env.production` accordingly
+   - Update `POSTGRES_PASSWORD` in `deployment/docker-compose.production.yml`
+   - Update `DATABASE_URL` in `deployment/.env.production` accordingly
 
 2. **Set a strong NEXTAUTH_SECRET**:
    ```bash
@@ -277,7 +283,7 @@ For production deployment on a local network:
 ## Support
 
 For issues or questions:
-- Check the logs: `docker-compose logs -f`
+- Check the logs: `docker compose -f deployment/docker-compose.production.yml logs -f`
 - Review this guide
 - Contact your system administrator
 
