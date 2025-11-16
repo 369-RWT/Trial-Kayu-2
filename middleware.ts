@@ -53,6 +53,18 @@ export async function middleware(request: NextRequest) {
     "camera=(), microphone=(), geolocation=()"
   );
 
+  // Content Security Policy (CSP) - XSS Prevention
+  response.headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " + // Next.js requires unsafe-eval for dev
+      "style-src 'self' 'unsafe-inline'; " + // Tailwind requires unsafe-inline
+      "img-src 'self' data: https:; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self'; " +
+      "frame-ancestors 'none';"
+  );
+
   if (process.env.NODE_ENV === "production") {
     response.headers.set(
       "Strict-Transport-Security",
@@ -99,9 +111,20 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Add user info to request headers for API routes
-    response.headers.set("X-User-Id", token.id as string);
-    response.headers.set("X-User-Role", token.role as string);
+    // Create API-specific response with user context headers
+    const apiResponse = NextResponse.next();
+
+    // Copy all security headers from the base response
+    response.headers.forEach((value, key) => {
+      apiResponse.headers.set(key, value);
+    });
+
+    // Add user context headers for API routes
+    apiResponse.headers.set("X-User-Id", token.id as string);
+    apiResponse.headers.set("X-User-Role", token.role as string);
+
+    // Return immediately for API routes (don't fall through to page route checks)
+    return apiResponse;
   }
 
   // Protected page routes

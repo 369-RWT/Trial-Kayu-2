@@ -1,9 +1,94 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding database...');
+
+  // =========================================================================
+  // CREATE DEFAULT USERS (ADMIN, MANAGER, OPERATOR, VIEWER)
+  // =========================================================================
+  console.log('\n👤 Creating default users...');
+
+  const defaultUsers = [
+    {
+      email: 'admin@alfathkayu.com',
+      name: 'System Administrator',
+      role: 'ADMIN',
+      password: 'Admin123!CHANGE_ME',
+    },
+    {
+      email: 'manager@alfathkayu.com',
+      name: 'Test Manager',
+      role: 'MANAGER',
+      password: 'Manager123!',
+    },
+    {
+      email: 'operator@alfathkayu.com',
+      name: 'Test Operator',
+      role: 'OPERATOR',
+      password: 'Operator123!',
+    },
+    {
+      email: 'viewer@alfathkayu.com',
+      name: 'Test Viewer',
+      role: 'VIEWER',
+      password: 'Viewer123!',
+    },
+  ];
+
+  const createdUsers = [];
+
+  for (const userData of defaultUsers) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: userData.email },
+    });
+
+    if (!existingUser) {
+      const passwordHash = await bcrypt.hash(userData.password, 12);
+
+      const user = await prisma.user.create({
+        data: {
+          email: userData.email,
+          name: userData.name,
+          passwordHash,
+          role: userData.role,
+          isActive: true,
+        },
+      });
+
+      createdUsers.push({ ...userData, id: user.id });
+    } else {
+      console.log(`  ⚠️  User ${userData.email} already exists, skipping...`);
+    }
+  }
+
+  if (createdUsers.length > 0) {
+    console.log(`✓ Created ${createdUsers.length} users\n`);
+    console.log('╔════════════════════════════════════════════════════════════════╗');
+    console.log('║                    🔐 DEFAULT USER CREDENTIALS                 ║');
+    console.log('╠════════════════════════════════════════════════════════════════╣');
+
+    for (const user of createdUsers) {
+      console.log('║                                                                ║');
+      console.log(`║  Role: ${user.role.padEnd(54)}║`);
+      console.log(`║  Email: ${user.email.padEnd(53)}║`);
+      console.log(`║  Password: ${user.password.padEnd(50)}║`);
+      console.log('║                                                                ║');
+      if (user.role === 'ADMIN') {
+        console.log('║  ⚠️  SECURITY WARNING: CHANGE PASSWORD IMMEDIATELY!           ║');
+        console.log('║                                                                ║');
+      }
+      console.log('╠════════════════════════════════════════════════════════════════╣');
+    }
+
+    console.log('║  Access the system at: http://localhost:3000/auth/signin      ║');
+    console.log('╚════════════════════════════════════════════════════════════════╝');
+    console.log('');
+  } else {
+    console.log('✓ All users already exist\n');
+  }
 
   // Create Wood Types
   const woodTypes = await Promise.all([

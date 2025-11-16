@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { generateLogTag } from "@/lib/utils";
 import { LogPurchaseSchema, validateInput } from "@/lib/validation";
 import { nanoid } from "nanoid";
+import { ratelimit } from "@/lib/ratelimit";
 
 const prisma = new PrismaClient();
 
@@ -10,15 +11,52 @@ const prisma = new PrismaClient();
  * POST /api/inventory/logs
  *
  * Create new log purchase with:
+ * - Rate limiting (10 requests per 10 seconds)
  * - Input validation (prevents injection, overflow, negative values)
  * - Database transactions (atomic operations)
  * - Race condition prevention (unique constraint + retry)
  * - Audit logging
  *
- * Security: Requires authentication (TODO: Add after NextAuth setup)
+ * Security: Requires authentication + RBAC (enforced by middleware)
  */
 export async function POST(request: NextRequest) {
   try {
+    // ========================================================================
+    // PHASE 1.4: RATE LIMITING
+    // ========================================================================
+    const identifier =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      request.ip ||
+      "unknown";
+
+    const { success, limit, remaining, reset } = await ratelimit.limit(
+      `inventory:${identifier}`
+    );
+
+    if (!success) {
+      const retryAfter = Math.ceil((reset - Date.now()) / 1000);
+
+      return NextResponse.json(
+        {
+          error: "Rate limit exceeded",
+          message: `Too many requests. Please try again in ${retryAfter} seconds.`,
+          limit,
+          remaining: 0,
+          resetAt: new Date(reset).toISOString(),
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(retryAfter),
+            "X-RateLimit-Limit": String(limit),
+            "X-RateLimit-Remaining": String(remaining),
+            "X-RateLimit-Reset": new Date(reset).toISOString(),
+          },
+        }
+      );
+    }
+
     // Parse request body
     const rawData = await request.json();
 
