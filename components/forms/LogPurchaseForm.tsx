@@ -15,6 +15,7 @@ interface Props {
 export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Form state with nilaiDasar
   const [formData, setFormData] = useState({
@@ -84,6 +85,7 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(""); // Clear any previous errors
 
     try {
       const response = await fetch("/api/inventory/logs", {
@@ -113,7 +115,7 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
       router.refresh();
     } catch (error) {
       console.error("Error creating log purchase:", error);
-      alert(error instanceof Error ? error.message : "Failed to create log purchase. Please try again.");
+      setError(error instanceof Error ? error.message : "Failed to create log purchase. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -121,13 +123,25 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Error Message */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg" role="alert">
+          <div className="flex items-start">
+            <svg className="h-5 w-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        </div>
+      )}
+
       <div className="card p-6">
         <h2 className="text-xl font-semibold mb-6">Purchase Information</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Purchase Date */}
           <div>
-            <label className="label">Purchase Date</label>
+            <label className="label">Purchase Date <span className="text-red-600">*</span></label>
             <input
               type="date"
               name="purchaseDate"
@@ -140,7 +154,7 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
 
           {/* Wood Type */}
           <div>
-            <label className="label">Wood Type</label>
+            <label className="label">Wood Type <span className="text-red-600">*</span></label>
             <select
               name="woodTypeId"
               value={formData.woodTypeId}
@@ -159,7 +173,7 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
 
           {/* Supplier */}
           <div className="md:col-span-2">
-            <label className="label">Supplier</label>
+            <label className="label">Supplier <span className="text-red-600">*</span></label>
             <select
               name="supplierId"
               value={formData.supplierId}
@@ -187,7 +201,7 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Lingkar */}
           <div>
-            <label className="label">Lingkar Kayu (cm)</label>
+            <label className="label">Lingkar Kayu (cm) <span className="text-red-600">*</span></label>
             <input
               type="number"
               name="lingkarCm"
@@ -204,7 +218,7 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
 
           {/* Panjang */}
           <div>
-            <label className="label">Panjang Kayu (m)</label>
+            <label className="label">Panjang Kayu (m) <span className="text-red-600">*</span></label>
             <input
               type="number"
               name="panjangM"
@@ -221,7 +235,7 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
 
           {/* Jumlah Log */}
           <div>
-            <label className="label">Jumlah Log</label>
+            <label className="label">Jumlah Log <span className="text-red-600">*</span></label>
             <input
               type="number"
               name="jumlahLog"
@@ -238,7 +252,7 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
           {/* Nilai Dasar - NEW FIELD */}
           <div className="md:col-span-3">
             <div className="flex items-center space-x-2 mb-1.5">
-              <label className="label mb-0">Nilai Dasar (Calculation Constant)</label>
+              <label className="label mb-0">Nilai Dasar (Calculation Constant) <span className="text-red-600">*</span></label>
               <div className="group relative">
                 <Info className="h-4 w-4 text-neutral-400 cursor-help" />
                 <div className="invisible group-hover:visible absolute z-10 w-80 p-3 bg-neutral-900 text-white text-xs rounded-lg shadow-lg -top-2 left-6">
@@ -319,7 +333,7 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Harga Per Kubik */}
           <div>
-            <label className="label">Harga Pasar per Kubik (Rp)</label>
+            <label className="label">Harga Pasar per Kubik (Rp) <span className="text-red-600">*</span></label>
             <input
               type="number"
               name="hargaPerKubik"

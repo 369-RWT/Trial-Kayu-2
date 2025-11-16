@@ -32,7 +32,7 @@ export default function Navigation() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
-    <nav className="bg-white border-b border-neutral-200 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-white border-b border-neutral-200 sticky top-0 z-50 shadow-sm" aria-label="Main navigation">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -80,6 +80,9 @@ export default function Navigation() {
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+                  aria-label="User menu"
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="true"
                 >
                   <User className="h-4 w-4" />
                   <span className="max-w-32 truncate">{session.user.email}</span>
@@ -133,6 +136,9 @@ export default function Navigation() {
             type="button"
             className="md:hidden p-2 rounded-md text-neutral-700 hover:bg-neutral-100"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
           >
             {mobileMenuOpen ? (
               <X className="h-6 w-6" />
@@ -144,7 +150,7 @@ export default function Navigation() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-1">
+          <div id="mobile-menu" className="md:hidden py-4 space-y-1">
             {navigation.map((item) => {
               const isActive =
                 pathname === item.href ||
