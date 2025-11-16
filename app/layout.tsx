@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "Al Fath Kayu - Wood Costing System",
@@ -15,12 +16,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
-        <div className="min-h-screen bg-background">
-          <Navigation />
-          <main className="container mx-auto px-4 py-8 max-w-7xl">
-            {children}
-          </main>
-        </div>
+        <Providers>
+          <div className="min-h-screen bg-background">
+            <Navigation />
+            <main className="container mx-auto px-4 py-8 max-w-7xl">
+              {children}
+            </main>
+          </div>
+        </Providers>
       </body>
     </html>
   );
