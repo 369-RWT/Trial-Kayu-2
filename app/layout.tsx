@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Providers from "@/components/Providers";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Al Fath Kayu - Wood Costing System",
@@ -42,6 +43,7 @@ export default function RootLayout({
               {children}
             </main>
           </div>
+          <Toaster position="bottom-right" richColors closeButton />
         </Providers>
       </body>
     </html>

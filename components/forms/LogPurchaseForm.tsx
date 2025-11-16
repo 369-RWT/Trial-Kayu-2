@@ -6,6 +6,8 @@ import { WoodType, Supplier } from "@prisma/client";
 import { calculateKubikasi, formatCurrency, formatNumber } from "@/lib/utils";
 import { Calculator, Save, ArrowLeft, Info } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { Spinner } from "@/components/ui/Spinner";
 
 interface Props {
   woodTypes: WoodType[];
@@ -29,6 +31,9 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
     nilaiDasar: "785", // User-configurable constant
   });
 
+  // Field-level validation errors
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   // Calculated values
   const [calculation, setCalculation] = useState({
     diameter: 0,
@@ -37,12 +42,66 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
     totalCost: 0,
   });
 
+  // Validate individual field
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case "woodTypeId":
+        return value ? "" : "Please select a wood type";
+      case "supplierId":
+        return value ? "" : "Please select a supplier";
+      case "lingkarCm":
+        const lingkar = parseFloat(value);
+        if (!value) return "Lingkar is required";
+        if (isNaN(lingkar)) return "Must be a valid number";
+        if (lingkar < 1) return "Minimum value is 1 cm";
+        if (lingkar > 1000) return "Maximum value is 1000 cm";
+        return "";
+      case "panjangM":
+        const panjang = parseFloat(value);
+        if (!value) return "Panjang is required";
+        if (isNaN(panjang)) return "Must be a valid number";
+        if (panjang < 0.1) return "Minimum value is 0.1 m";
+        if (panjang > 100) return "Maximum value is 100 m";
+        return "";
+      case "jumlahLog":
+        const jumlah = parseInt(value);
+        if (!value) return "Jumlah log is required";
+        if (isNaN(jumlah)) return "Must be a valid number";
+        if (jumlah < 1) return "Minimum value is 1";
+        if (jumlah > 10000) return "Maximum value is 10,000";
+        return "";
+      case "hargaPerKubik":
+        const harga = parseFloat(value);
+        if (!value) return "Price is required";
+        if (isNaN(harga)) return "Must be a valid number";
+        if (harga < 1000) return "Minimum value is Rp 1,000";
+        if (harga > 1000000000) return "Maximum value is Rp 1,000,000,000";
+        return "";
+      case "nilaiDasar":
+        const nilai = parseFloat(value);
+        if (!value) return "Nilai Dasar is required";
+        if (isNaN(nilai)) return "Must be a valid number";
+        if (nilai < 1) return "Minimum value is 1";
+        if (nilai > 10000) return "Maximum value is 10,000";
+        return "";
+      default:
+        return "";
+    }
+  };
+
   // Handle input changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Validate field
+    const error = validateField(name, value);
+    setFieldErrors((prev) => ({
+      ...prev,
+      [name]: error,
+    }));
 
     // Recalculate if dimension fields change
     if (
@@ -111,11 +170,18 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
         throw new Error(error.details?.join(", ") || error.error || "Failed to create log purchase");
       }
 
+      const data = await response.json();
+      toast.success("Log purchase created successfully!", {
+        description: `Log tag: ${data.log.logTag}`
+      });
+
       router.push("/inventory/logs");
       router.refresh();
     } catch (error) {
       console.error("Error creating log purchase:", error);
-      setError(error instanceof Error ? error.message : "Failed to create log purchase. Please try again.");
+      toast.error("Failed to create log purchase", {
+        description: error instanceof Error ? error.message : "Please try again."
+      });
     } finally {
       setLoading(false);
     }
@@ -159,8 +225,10 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
               name="woodTypeId"
               value={formData.woodTypeId}
               onChange={handleChange}
-              className="input"
+              className={`input ${fieldErrors.woodTypeId ? 'border-red-500 focus:ring-red-500' : ''}`}
               required
+              aria-invalid={!!fieldErrors.woodTypeId}
+              aria-describedby={fieldErrors.woodTypeId ? "woodTypeId-error" : undefined}
             >
               <option value="">Select wood type...</option>
               {woodTypes.map((type) => (
@@ -169,6 +237,11 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
                 </option>
               ))}
             </select>
+            {fieldErrors.woodTypeId && (
+              <p id="woodTypeId-error" className="text-sm text-red-600 mt-1" role="alert">
+                {fieldErrors.woodTypeId}
+              </p>
+            )}
           </div>
 
           {/* Supplier */}
@@ -178,8 +251,10 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
               name="supplierId"
               value={formData.supplierId}
               onChange={handleChange}
-              className="input"
+              className={`input ${fieldErrors.supplierId ? 'border-red-500 focus:ring-red-500' : ''}`}
               required
+              aria-invalid={!!fieldErrors.supplierId}
+              aria-describedby={fieldErrors.supplierId ? "supplierId-error" : undefined}
             >
               <option value="">Select supplier...</option>
               {suppliers.map((supplier) => (
@@ -188,6 +263,11 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
                 </option>
               ))}
             </select>
+            {fieldErrors.supplierId && (
+              <p id="supplierId-error" className="text-sm text-red-600 mt-1" role="alert">
+                {fieldErrors.supplierId}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -210,10 +290,17 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
               step="0.01"
               min="1"
               max="1000"
-              className="input"
+              className={`input ${fieldErrors.lingkarCm ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="e.g., 125.00"
               required
+              aria-invalid={!!fieldErrors.lingkarCm}
+              aria-describedby={fieldErrors.lingkarCm ? "lingkarCm-error" : undefined}
             />
+            {fieldErrors.lingkarCm && (
+              <p id="lingkarCm-error" className="text-sm text-red-600 mt-1" role="alert">
+                {fieldErrors.lingkarCm}
+              </p>
+            )}
           </div>
 
           {/* Panjang */}
@@ -227,10 +314,17 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
               step="0.01"
               min="0.1"
               max="100"
-              className="input"
+              className={`input ${fieldErrors.panjangM ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="e.g., 4.50"
               required
+              aria-invalid={!!fieldErrors.panjangM}
+              aria-describedby={fieldErrors.panjangM ? "panjangM-error" : undefined}
             />
+            {fieldErrors.panjangM && (
+              <p id="panjangM-error" className="text-sm text-red-600 mt-1" role="alert">
+                {fieldErrors.panjangM}
+              </p>
+            )}
           </div>
 
           {/* Jumlah Log */}
@@ -243,10 +337,17 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
               onChange={handleChange}
               min="1"
               max="10000"
-              className="input"
+              className={`input ${fieldErrors.jumlahLog ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="e.g., 8"
               required
+              aria-invalid={!!fieldErrors.jumlahLog}
+              aria-describedby={fieldErrors.jumlahLog ? "jumlahLog-error" : undefined}
             />
+            {fieldErrors.jumlahLog && (
+              <p id="jumlahLog-error" className="text-sm text-red-600 mt-1" role="alert">
+                {fieldErrors.jumlahLog}
+              </p>
+            )}
           </div>
 
           {/* Nilai Dasar - NEW FIELD */}
@@ -278,13 +379,21 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
               min="1"
               max="10000"
               step="1"
-              className="input max-w-xs"
+              className={`input max-w-xs ${fieldErrors.nilaiDasar ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="785"
               required
+              aria-invalid={!!fieldErrors.nilaiDasar}
+              aria-describedby={fieldErrors.nilaiDasar ? "nilaiDasar-error" : undefined}
             />
-            <p className="text-xs text-neutral-500 mt-1">
-              Industry standard constant for volume calculation (default: 785)
-            </p>
+            {fieldErrors.nilaiDasar ? (
+              <p id="nilaiDasar-error" className="text-sm text-red-600 mt-1" role="alert">
+                {fieldErrors.nilaiDasar}
+              </p>
+            ) : (
+              <p className="text-xs text-neutral-500 mt-1">
+                Industry standard constant for volume calculation (default: 785)
+              </p>
+            )}
           </div>
         </div>
 
@@ -342,10 +451,17 @@ export default function LogPurchaseForm({ woodTypes, suppliers }: Props) {
               step="1000"
               min="1000"
               max="1000000000"
-              className="input"
+              className={`input ${fieldErrors.hargaPerKubik ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="e.g., 4000000"
               required
+              aria-invalid={!!fieldErrors.hargaPerKubik}
+              aria-describedby={fieldErrors.hargaPerKubik ? "hargaPerKubik-error" : undefined}
             />
+            {fieldErrors.hargaPerKubik && (
+              <p id="hargaPerKubik-error" className="text-sm text-red-600 mt-1" role="alert">
+                {fieldErrors.hargaPerKubik}
+              </p>
+            )}
           </div>
 
           {/* Total Cost */}
