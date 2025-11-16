@@ -22,6 +22,10 @@ export async function GET(request: NextRequest) {
     const targetDate = date ? new Date(date) : new Date();
     targetDate.setHours(0, 0, 0, 0);
 
+    // Calculate 30 days ago for report period
+    const thirtyDaysAgo = new Date(targetDate);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     // Get all wood types
     const woodTypes = await prisma.woodType.findMany({
       where: { isActive: true },
