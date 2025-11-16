@@ -84,7 +84,8 @@ export default function LogInventoryClient({ logs }: Props) {
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table View - Hidden on mobile */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="table">
             <thead>
               <tr>
@@ -147,6 +148,69 @@ export default function LogInventoryClient({ logs }: Props) {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View - Visible only on mobile */}
+        <div className="md:hidden space-y-4 p-4">
+          {filteredLogs.map((log) => (
+            <div key={log.id} className="bg-neutral-50 rounded-lg p-4 space-y-3 border border-neutral-200">
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-mono text-sm font-bold text-neutral-900">
+                    {log.logTag}
+                  </div>
+                  <div className="flex items-center mt-1">
+                    <span className="font-mono text-xs bg-neutral-200 px-2 py-0.5 rounded mr-2">
+                      {log.woodType.woodCode}
+                    </span>
+                    <span className="text-sm text-neutral-700">{log.woodType.woodName}</span>
+                  </div>
+                </div>
+                <span className={`badge ${getStatusColor(log.status)}`}>
+                  {log.status}
+                </span>
+              </div>
+
+              {/* Details Grid */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-neutral-500 text-xs">Supplier</div>
+                  <div className="font-medium">{log.supplier.supplierName}</div>
+                </div>
+                <div>
+                  <div className="text-neutral-500 text-xs">Date</div>
+                  <div className="font-medium">{formatDateShort(log.purchaseDate)}</div>
+                </div>
+                <div>
+                  <div className="text-neutral-500 text-xs">Kubikasi</div>
+                  <div className="font-mono font-medium">{formatNumber(log.kubikasiFinal)} m³</div>
+                </div>
+                <div>
+                  <div className="text-neutral-500 text-xs">Remaining</div>
+                  <div className="font-mono font-medium">{formatNumber(log.remainingKubikasi)} m³</div>
+                </div>
+                <div>
+                  <div className="text-neutral-500 text-xs">Price/m³</div>
+                  <div className="font-mono font-medium">{formatCurrency(log.hargaPerKubik)}</div>
+                </div>
+                <div>
+                  <div className="text-neutral-500 text-xs">Total Cost</div>
+                  <div className="font-mono font-semibold text-primary-700">
+                    {formatCurrency(log.totalCost)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <Link
+                href={`/inventory/logs/${log.logTag}`}
+                className="block w-full text-center btn btn-outline text-sm py-2"
+              >
+                View Details
+              </Link>
+            </div>
+          ))}
         </div>
 
         {filteredLogs.length === 0 && !searchTerm && (

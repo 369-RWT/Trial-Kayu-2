@@ -84,7 +84,8 @@ export default function ProductionBatchesClient({ batches }: Props) {
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table View - Hidden on mobile */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="table">
             <thead>
               <tr>
@@ -133,6 +134,51 @@ export default function ProductionBatchesClient({ batches }: Props) {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View - Visible only on mobile */}
+        <div className="md:hidden space-y-4 p-4">
+          {filteredBatches.map((batch) => (
+            <div key={batch.id} className="bg-neutral-50 rounded-lg p-4 space-y-3 border border-neutral-200">
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-mono text-sm font-bold text-neutral-900">
+                    Batch #{batch.id}
+                  </div>
+                  <div className="text-sm text-neutral-600 mt-1">
+                    {formatDateShort(batch.productionDate)} • Shift {batch.shift}
+                  </div>
+                </div>
+                <span className={`badge ${getStatusColor(batch.status)}`}>
+                  {batch.status}
+                </span>
+              </div>
+
+              {/* Line Items */}
+              <div>
+                <div className="text-neutral-500 text-xs mb-2">Line Items</div>
+                <div className="flex flex-wrap gap-1">
+                  {batch.batchLineItems.map((item, idx) => (
+                    <span
+                      key={idx}
+                      className="text-xs bg-neutral-200 px-2 py-1 rounded"
+                    >
+                      {item.woodType.woodCode} → {item.product.productCode}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <Link
+                href={`/production/batches/${batch.id}`}
+                className="block w-full text-center btn btn-outline text-sm py-2"
+              >
+                View Details
+              </Link>
+            </div>
+          ))}
         </div>
 
         {filteredBatches.length === 0 && !searchTerm && (
