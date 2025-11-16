@@ -24,7 +24,7 @@ async function getAvailableLogs(woodTypeId: number) {
   return await prisma.logInventory.findMany({
     where: {
       woodTypeId,
-      status: 'AVAILABLE',
+      status: { in: ['AVAILABLE', 'Available', 'PARTIAL', 'Partial'] },
       remainingKubikasi: { gt: 0 },
     },
     orderBy: { purchaseDate: 'asc' }, // FIFO
@@ -93,7 +93,7 @@ async function createProductionBatch(
 
   // Get current WAC for the wood type
   const logs = await prisma.logInventory.findMany({
-    where: { woodTypeId, status: { in: ['AVAILABLE', 'PARTIAL'] } },
+    where: { woodTypeId, status: { in: ['AVAILABLE', 'Available', 'PARTIAL', 'Partial'] } },
   });
   const totalValue = logs.reduce((sum, log) => sum + log.remainingKubikasi * log.hargaPerKubik, 0);
   const totalKubikasi = logs.reduce((sum, log) => sum + log.remainingKubikasi, 0);
@@ -148,12 +148,12 @@ async function consumeLog(
   });
 
   // Update log remaining volume
+  const newRemaining = log.remainingKubikasi - volumeConsumed;
   await prisma.logInventory.update({
     where: { id: logId },
     data: {
-      remainingKubikasi: log.remainingKubikasi - volumeConsumed,
-      status:
-        log.remainingKubikasi - volumeConsumed <= 0 ? 'CONSUMED' : 'PARTIAL',
+      remainingKubikasi: newRemaining,
+      status: newRemaining <= 0 ? 'CONSUMED' : newRemaining < log.kubikasiFinal ? 'PARTIAL' : 'AVAILABLE',
     },
   });
 
@@ -193,8 +193,8 @@ async function createProductionOutput(
 }
 
 async function runSimulation(config: SimulationConfig): Promise<ProductionResult[]> {
-  console.log('🏭 Starting Production Simulation...');
-  console.log(`📅 Duration: ${config.durationDays} days`);
+  console.log('🏭 Starting 3-Month Production Simulation...');
+  console.log(`📅 Duration: ${config.durationDays} days (~${Math.round(config.durationDays / 30)} months)`);
   console.log(`📦 Products per day: ${config.productsPerDay}`);
   console.log(`🌳 Wood types: ${config.woodTypes.join(', ')}\n`);
 
@@ -215,18 +215,21 @@ async function runSimulation(config: SimulationConfig): Promise<ProductionResult
     throw new Error('No wood types found for the specified codes');
   }
 
+  let insufficientLogCount = 0;
+
   for (let day = 0; day < config.durationDays; day++) {
     const currentDate = new Date(config.startDate);
     currentDate.setDate(currentDate.getDate() + day);
 
-    console.log(`\n📅 Day ${day + 1} - ${currentDate.toLocaleDateString()}`);
+    // Progress indicator every 10 days
+    if (day % 10 === 0 || day === config.durationDays - 1) {
+      console.log(`\n📅 Day ${day + 1}/${config.durationDays} - ${currentDate.toLocaleDateString()}`);
+    }
 
     // Distribute products across wood types
     const productsPerWoodType = Math.floor(config.productsPerDay / woodTypes.length);
 
     for (const woodType of woodTypes) {
-      console.log(`  🌳 Processing ${woodType.woodName} (${woodType.woodCode})`);
-
       // Get available products for this wood type
       const products = await getProductsForWoodType(woodType.id);
       if (products.length === 0) {
@@ -260,8 +263,6 @@ async function runSimulation(config: SimulationConfig): Promise<ProductionResult
         machine.id
       );
 
-      console.log(`    ✓ Created batch ${batch.id} for ${productsPerWoodType} products`);
-
       // Consume logs (FIFO)
       let remainingVolume = targetVolume * (1 + product.standardWasteRate / 100); // Include waste
       let totalMaterialCost = 0;
@@ -274,12 +275,13 @@ async function runSimulation(config: SimulationConfig): Promise<ProductionResult
         const cost = await consumeLog(log.id, lineItem.id, volumeToConsume, currentDate);
         totalMaterialCost += cost;
         remainingVolume -= volumeToConsume;
-
-        console.log(`      - Consumed ${volumeToConsume.toFixed(2)} m³ from log ${log.logTag}`);
       }
 
       if (remainingVolume > 0) {
-        console.log(`      ⚠️  Insufficient logs! Short by ${remainingVolume.toFixed(2)} m³`);
+        insufficientLogCount++;
+        if (insufficientLogCount <= 5) {
+          console.log(`      ⚠️  Insufficient logs for ${woodType.woodCode}! Short by ${remainingVolume.toFixed(2)} m³`);
+        }
       }
 
       // Create production output
@@ -293,8 +295,6 @@ async function runSimulation(config: SimulationConfig): Promise<ProductionResult
         totalMaterialCost,
         currentDate
       );
-
-      console.log(`      ✓ Output: ${actualOutput.toFixed(2)} m³, Cost: Rp ${totalMaterialCost.toLocaleString('id-ID')}`);
 
       // Update batch status
       await prisma.productionBatch.update({
@@ -318,6 +318,10 @@ async function runSimulation(config: SimulationConfig): Promise<ProductionResult
     }
   }
 
+  if (insufficientLogCount > 5) {
+    console.log(`\n⚠️  Total insufficient log warnings: ${insufficientLogCount} (showing first 5 only)`);
+  }
+
   console.log('\n✅ Simulation completed successfully!');
   return results;
 }
@@ -325,20 +329,20 @@ async function runSimulation(config: SimulationConfig): Promise<ProductionResult
 async function main() {
   try {
     const config: SimulationConfig = {
-      startDate: new Date('2025-11-10'), // Start from Nov 10, 2025
-      durationDays: 7,
+      startDate: new Date('2025-11-17'), // Start from Nov 17, 2025
+      durationDays: 90, // 3 months
       productsPerDay: 100,
-      woodTypes: ['JT', 'MH', 'MR', 'SG'], // Jati, Mahoni, Meranti, Sengon
+      woodTypes: ['JT', 'MH', 'MR', 'SG'], // Jati, Mahoni, Meranti, Sengon (excluding Kamper)
     };
 
     const results = await runSimulation(config);
 
     // Print summary
     console.log('\n' + '='.repeat(80));
-    console.log('SIMULATION SUMMARY');
+    console.log('3-MONTH SIMULATION SUMMARY');
     console.log('='.repeat(80));
     console.log(`Total batches created: ${results.length}`);
-    console.log(`Total products: ${results.reduce((sum, r) => sum + r.productsCreated, 0)}`);
+    console.log(`Total products: ${results.reduce((sum, r) => sum + r.productsCreated, 0).toLocaleString()}`);
     console.log(`Total output volume: ${results.reduce((sum, r) => sum + r.outputVolume, 0).toFixed(2)} m³`);
     console.log(`Total waste volume: ${results.reduce((sum, r) => sum + r.wasteVolume, 0).toFixed(2)} m³`);
     console.log(`Total material cost: Rp ${results.reduce((sum, r) => sum + r.materialCost, 0).toLocaleString('id-ID')}`);

@@ -13,12 +13,37 @@ services:
       POSTGRES_DB: alfathkayu_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - alfathkayu-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U alfathkayu -d alfathkayu_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alfathkayu-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://alfathkayu:alfathkayu_dev_pass@postgres:5432/alfathkayu_db
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=change_this_to_a_random_secret_in_production
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - alfathkayu-network
+
 volumes:
   postgres_data:
     name: alfathkayu_postgres_data
+
+networks:
+  alfathkayu-network:
+    driver: bridge
