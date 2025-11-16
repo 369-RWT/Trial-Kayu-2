@@ -4,6 +4,7 @@
   "description": "Multi-Wood-Type Precision Costing System for Al Fath Kayu",
   "private": true,
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
