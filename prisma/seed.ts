@@ -16,7 +16,7 @@ async function main() {
       email: 'admin@alfathkayu.com',
       name: 'System Administrator',
       role: 'ADMIN',
-      password: 'Admin123!CHANGE_ME',
+      password: 'Admin123!',
     },
     {
       email: 'manager@alfathkayu.com',
