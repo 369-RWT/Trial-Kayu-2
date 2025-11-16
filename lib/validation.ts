@@ -61,8 +61,7 @@ export const LogPurchaseSchema = z.object({
     .number()
     .min(1, "Nilai dasar must be positive")
     .max(10000, "Nilai dasar cannot exceed 10,000")
-    .default(785)
-    .optional(),
+    .default(785),
 
   kubikasiTotal: z
     .number()
