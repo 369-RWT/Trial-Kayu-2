@@ -1,8 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import Link from "next/link";
 import {
-
-export const dynamic = 'force-dynamic';
   BarChart3,
   TrendingUp,
   Package,
@@ -164,8 +162,8 @@ export default async function ReportsPage() {
           <div className="text-sm text-green-600 mt-2">
             {data.totalWasteCost > 0
               ? formatPercentage(
-                  (data.totalRecoveryValue / data.totalWasteCost) * 100
-                )
+                (data.totalRecoveryValue / data.totalWasteCost) * 100
+              )
               : "0%"}{" "}
             recovery rate
           </div>
