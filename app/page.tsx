@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import Link from "next/link";
 import {
+
+export const dynamic = 'force-dynamic';
   BarChart3,
   Package,
   TrendingUp,
@@ -293,3 +295,4 @@ export default async function HomePage() {
     </div>
   );
 }
+

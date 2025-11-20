@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { TrendingUp } from "lucide-react";
 import { formatNumber, formatCurrency, formatPercentage } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 async function getCostBreakdownData() {
@@ -232,3 +234,4 @@ export default async function CostBreakdownPage() {
         </div>
     );
 }
+

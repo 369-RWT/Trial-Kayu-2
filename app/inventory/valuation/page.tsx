@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { formatCurrency, formatNumber, formatDateShort } from "@/lib/utils";
 import { TrendingUp, Package } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 async function getValuationData() {
@@ -153,3 +155,4 @@ export default async function InventoryValuationPage() {
     </div>
   );
 }
+

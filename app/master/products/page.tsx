@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 async function getProducts() {
@@ -99,3 +101,4 @@ export default async function ProductsPage() {
         </div>
     );
 }
+

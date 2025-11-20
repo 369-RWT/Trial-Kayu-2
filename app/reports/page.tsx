@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import Link from "next/link";
 import {
+
+export const dynamic = 'force-dynamic';
   BarChart3,
   TrendingUp,
   Package,
@@ -9,6 +11,8 @@ import {
   Users,
 } from "lucide-react";
 import { formatCurrency, formatNumber, formatPercentage } from "@/lib/utils";
+
+export const dynamic = 'force-dynamic';
 
 const prisma = new PrismaClient();
 
@@ -234,3 +238,4 @@ export default async function ReportsPage() {
     </div>
   );
 }
+

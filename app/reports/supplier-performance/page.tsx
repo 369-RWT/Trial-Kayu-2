@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { BarChart3 } from "lucide-react";
 import { formatNumber, formatPercentage, formatCurrency } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 async function getSupplierPerformanceData() {
@@ -146,3 +148,4 @@ export default async function SupplierPerformancePage() {
         </div>
     );
 }
+

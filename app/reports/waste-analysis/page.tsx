@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { AlertTriangle } from "lucide-react";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 async function getWasteAnalysisData() {
@@ -219,3 +221,4 @@ export default async function WasteAnalysisPage() {
         </div>
     );
 }
+

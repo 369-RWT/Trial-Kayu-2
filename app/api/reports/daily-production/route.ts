@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // ============================================================================
 // GET: Daily Production Summary Report
 // ============================================================================
@@ -110,9 +112,9 @@ export async function GET(request: NextRequest) {
           },
           worker: lineItem.worker
             ? {
-                code: lineItem.worker.workerCode,
-                name: lineItem.worker.workerName,
-              }
+              code: lineItem.worker.workerCode,
+              name: lineItem.worker.workerName,
+            }
             : null,
           machineType: lineItem.machineType?.machineName || null,
           targetKubikasi: lineItem.targetKubikasi,
@@ -129,8 +131,8 @@ export async function GET(request: NextRequest) {
             totalOutputKubikasi >= lineItem.targetKubikasi
               ? "Achieved"
               : totalOutputKubikasi > 0
-              ? "Partial"
-              : "Not Started",
+                ? "Partial"
+                : "Not Started",
         };
       });
 
@@ -167,7 +169,7 @@ export async function GET(request: NextRequest) {
           efficiency:
             batchTotals.targetKubikasi > 0
               ? (batchTotals.actualOutputKubikasi / batchTotals.targetKubikasi) *
-                100
+              100
               : 0,
         },
       };
@@ -205,7 +207,7 @@ export async function GET(request: NextRequest) {
     const overallEfficiency =
       overallTotals.targetKubikasi > 0
         ? (overallTotals.actualOutputKubikasi / overallTotals.targetKubikasi) *
-          100
+        100
         : 0;
 
     const averageCostPerKubik =

@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import LogPurchaseForm from "@/components/forms/LogPurchaseForm";
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 async function getFormData() {
@@ -34,3 +36,4 @@ export default async function NewLogPurchasePage() {
     </div>
   );
 }
+

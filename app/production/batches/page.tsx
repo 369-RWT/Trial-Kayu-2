@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import ProductionBatchesClient from "@/components/production/ProductionBatchesClient";
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 async function getProductionBatches() {
@@ -48,3 +50,4 @@ export default async function ProductionBatchesPage() {
     </div>
   );
 }
+
