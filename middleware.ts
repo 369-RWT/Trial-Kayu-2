@@ -8,15 +8,15 @@ export async function middleware(request: NextRequest) {
   // =========================================================================
   // PHASE 3.1: HTTPS Enforcement
   // =========================================================================
-  if (
-    process.env.NODE_ENV === "production" &&
-    request.headers.get("x-forwarded-proto") !== "https"
-  ) {
-    return NextResponse.redirect(
-      `https://${request.headers.get("host")}${pathname}`,
-      301
-    );
-  }
+  // if (
+  //   process.env.NODE_ENV === "production" &&
+  //   request.headers.get("x-forwarded-proto") !== "https"
+  // ) {
+  //   return NextResponse.redirect(
+  //     `https://${request.headers.get("host")}${pathname}`,
+  //     301
+  //   );
+  // }
 
   // =========================================================================
   // PHASE 3.4: CORS Headers
@@ -57,20 +57,20 @@ export async function middleware(request: NextRequest) {
   response.headers.set(
     "Content-Security-Policy",
     "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " + // Next.js requires unsafe-eval for dev
-      "style-src 'self' 'unsafe-inline'; " + // Tailwind requires unsafe-inline
-      "img-src 'self' data: https:; " +
-      "font-src 'self' data:; " +
-      "connect-src 'self'; " +
-      "frame-ancestors 'none';"
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " + // Next.js requires unsafe-eval for dev
+    "style-src 'self' 'unsafe-inline'; " + // Tailwind requires unsafe-inline
+    "img-src 'self' data: https:; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self'; " +
+    "frame-ancestors 'none';"
   );
 
-  if (process.env.NODE_ENV === "production") {
-    response.headers.set(
-      "Strict-Transport-Security",
-      "max-age=31536000; includeSubDomains"
-    );
-  }
+  // if (process.env.NODE_ENV === "production") {
+  //   response.headers.set(
+  //     "Strict-Transport-Security",
+  //     "max-age=31536000; includeSubDomains"
+  //   );
+  // }
 
   // =========================================================================
   // PHASE 1.3 & 3.2: Authentication & Authorization

@@ -106,15 +106,27 @@ export default function ProductionBatchesClient({ batches }: Props) {
                   <td>{formatDateShort(batch.productionDate)}</td>
                   <td>Shift {batch.shift}</td>
                   <td>
-                    <div className="flex flex-wrap gap-1">
-                      {batch.batchLineItems.map((item, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs bg-neutral-100 px-2 py-1 rounded"
-                        >
-                          {item.woodType.woodCode} → {item.product.productCode}
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-neutral-900">
+                        {batch.batchLineItems.length} items
+                      </span>
+                      {batch.batchLineItems.length > 0 && (
+                        <div className="flex gap-1">
+                          {batch.batchLineItems.slice(0, 3).map((item, idx) => (
+                            <span
+                              key={idx}
+                              className="text-xs bg-neutral-100 px-2 py-1 rounded"
+                            >
+                              {item.woodType.woodCode} → {item.product.productCode}
+                            </span>
+                          ))}
+                          {batch.batchLineItems.length > 3 && (
+                            <span className="text-xs text-neutral-500 px-2 py-1">
+                              +{batch.batchLineItems.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td>
@@ -163,9 +175,11 @@ export default function ProductionBatchesClient({ batches }: Props) {
 
               {/* Line Items */}
               <div className="pt-2">
-                <div className="text-neutral-500 text-xs font-semibold uppercase tracking-wide mb-2">Line Items</div>
+                <div className="text-neutral-500 text-xs font-semibold uppercase tracking-wide mb-2">
+                  {batch.batchLineItems.length} Line Items
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {batch.batchLineItems.map((item, idx) => (
+                  {batch.batchLineItems.slice(0, 5).map((item, idx) => (
                     <span
                       key={idx}
                       className="text-xs bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/50 px-2.5 py-1 rounded-md font-semibold shadow-sm"
@@ -173,6 +187,11 @@ export default function ProductionBatchesClient({ batches }: Props) {
                       {item.woodType.woodCode} → {item.product.productCode}
                     </span>
                   ))}
+                  {batch.batchLineItems.length > 5 && (
+                    <span className="text-xs text-neutral-500 px-2.5 py-1">
+                      +{batch.batchLineItems.length - 5} more
+                    </span>
+                  )}
                 </div>
               </div>
 
