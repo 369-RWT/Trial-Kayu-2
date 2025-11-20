@@ -4,6 +4,7 @@ import { generateLogTag } from "@/lib/utils";
 import { LogPurchaseSchema, validateInput } from "@/lib/validation";
 import { nanoid } from "nanoid";
 import { ratelimit } from "@/lib/ratelimit";
+import { inventoryLedger } from "@/lib/inventory-ledger";
 
 const prisma = new PrismaClient();
 
@@ -277,10 +278,25 @@ export async function POST(request: NextRequest) {
               kubikasi: kubikasiFinal,
               cost: totalCost,
             }),
-            ipAddress,
             userAgent,
           },
         });
+
+        // ====================================================================
+        // PHASE 4: INVENTORY LEDGER
+        // ====================================================================
+        await inventoryLedger.recordEntry(
+          {
+            woodTypeId: data.woodTypeId,
+            transactionDate: purchaseDate,
+            type: "IN",
+            category: "PURCHASE",
+            referenceId: log.logTag,
+            kubikasiChange: kubikasiFinal,
+            notes: `Purchase from ${supplier.supplierName}`,
+          },
+          tx
+        );
 
         return log;
       },

@@ -20,6 +20,7 @@ import { useState } from "react";
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Ledger", href: "/inventory/ledger", icon: BarChart3 },
   { name: "Production", href: "/production", icon: Factory },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Master Data", href: "/master", icon: Settings },

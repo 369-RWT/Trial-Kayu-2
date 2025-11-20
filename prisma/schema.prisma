@@ -32,6 +32,7 @@ model WoodType {
   wasteDeviations       WasteDeviation[]
   productPricing        ProductPricing[]
   supplierPerformances  SupplierWoodPerformance[]
+  inventoryLedgers      InventoryLedger[]
 
   @@map("wood_types")
 }
@@ -180,6 +181,26 @@ model InventoryValuation {
 
   @@unique([woodTypeId, valuationDate])
   @@map("inventory_valuations")
+}
+
+model InventoryLedger {
+  id              Int      @id @default(autoincrement())
+  woodTypeId      Int
+  transactionDate DateTime @default(now())
+  type            String   // IN, OUT
+  category        String   // PURCHASE, PRODUCTION, WASTE, ADJUSTMENT
+  referenceId     String?  // Log Tag, Batch ID, etc.
+  kubikasiChange  Float    // Positive for IN, Negative for OUT
+  runningBalance  Float    // Balance after transaction
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  woodType WoodType @relation(fields: [woodTypeId], references: [id])
+
+  @@index([woodTypeId, transactionDate])
+  @@map("inventory_ledger")
 }
 
 // ============================================================================

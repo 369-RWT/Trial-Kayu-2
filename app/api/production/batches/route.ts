@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ratelimit } from "@/lib/ratelimit";
+import { inventoryLedger } from "@/lib/inventory-ledger";
 import { z } from "zod";
 
 // ============================================================================
@@ -232,22 +233,95 @@ export async function POST(request: NextRequest) {
       }
 
       // Create batch line items
-      const createdLineItems = await Promise.all(
-        lineItems.map((item, index) =>
-          tx.batchLineItem.create({
-            data: {
-              batchId: batch.id,
-              lineNumber: index + 1,
-              woodTypeId: item.woodTypeId,
-              productId: item.productId,
-              targetKubikasi: item.targetKubikasi,
-              wacPerKubik: wacMap.get(item.woodTypeId) || 0,
-              workerId: item.workerId,
-              machineTypeId: item.machineTypeId,
-            },
-          })
-        )
-      );
+      // Create batch line items and allocate logs (Sequential to handle same wood type usage)
+      const createdLineItems = [];
+      for (const [index, item] of lineItems.entries()) {
+        // 1. Create Line Item
+        const lineItem = await tx.batchLineItem.create({
+          data: {
+            batchId: batch.id,
+            lineNumber: index + 1,
+            woodTypeId: item.woodTypeId,
+            productId: item.productId,
+            targetKubikasi: item.targetKubikasi,
+            wacPerKubik: wacMap.get(item.woodTypeId) || 0,
+            workerId: item.workerId,
+            machineTypeId: item.machineTypeId,
+          },
+        });
+
+        // 2. Allocate Logs (FIFO)
+        let remainingToAllocate = item.targetKubikasi;
+
+        // Fetch available logs for this wood type, ordered by purchase date (FIFO)
+        // We fetch inside the loop to get the latest state if multiple items use same wood type
+        const logs = await tx.logInventory.findMany({
+          where: {
+            woodTypeId: item.woodTypeId,
+            status: { in: ["Available", "Partial"] },
+            remainingKubikasi: { gt: 0 },
+          },
+          orderBy: { purchaseDate: "asc" },
+        });
+
+        for (const log of logs) {
+          if (remainingToAllocate <= 0.0001) break;
+
+          const available = log.remainingKubikasi;
+          const consume = Math.min(available, remainingToAllocate);
+
+          if (consume > 0) {
+            // Update Log
+            const newRemaining = available - consume;
+            const newStatus = newRemaining < 0.001 ? "Consumed" : "Partial";
+
+            await tx.logInventory.update({
+              where: { id: log.id },
+              data: {
+                remainingKubikasi: newRemaining,
+                status: newStatus,
+              },
+            });
+
+            // Create Consumption Record
+            await tx.logConsumption.create({
+              data: {
+                logTag: log.logTag,
+                batchLineId: lineItem.id,
+                woodTypeId: item.woodTypeId,
+                supplierId: log.supplierId,
+                purchaseDate: log.purchaseDate,
+                kubikasiConsumed: consume,
+                wacPerKubik: wacMap.get(item.woodTypeId) || 0,
+                materialCost: consume * (wacMap.get(item.woodTypeId) || 0),
+                consumptionTimestamp: prodDate,
+              },
+            });
+
+            remainingToAllocate -= consume;
+          }
+        }
+
+        if (remainingToAllocate > 0.001) {
+          throw new Error(`Insufficient inventory for Wood Type ID ${item.woodTypeId}. Missing ${remainingToAllocate.toFixed(4)} m³.`);
+        }
+
+        // 3. Record Ledger Entry (OUT)
+        await inventoryLedger.recordEntry(
+          {
+            woodTypeId: item.woodTypeId,
+            transactionDate: prodDate,
+            type: "OUT",
+            category: "PRODUCTION",
+            referenceId: batch.id,
+            kubikasiChange: -item.targetKubikasi,
+            notes: `Production Batch ${batch.id} - Line ${index + 1}`,
+          },
+          tx
+        );
+
+        createdLineItems.push(lineItem);
+      }
 
       return { batch, lineItems: createdLineItems };
     });
