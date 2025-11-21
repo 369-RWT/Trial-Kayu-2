@@ -6,6 +6,8 @@ import { nanoid } from "nanoid";
 import { ratelimit } from "@/lib/ratelimit";
 import { inventoryLedger } from "@/lib/inventory-ledger";
 
+
+export const dynamic = 'force-dynamic';
 /**
  * POST /api/inventory/logs
  *
@@ -337,7 +339,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
 
     const page = parseInt(searchParams.get("page") || "1");
     const pageSize = Math.min(

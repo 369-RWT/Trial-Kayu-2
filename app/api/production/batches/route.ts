@@ -6,6 +6,8 @@ import { ratelimit } from "@/lib/ratelimit";
 import { inventoryLedger } from "@/lib/inventory-ledger";
 import { z } from "zod";
 
+
+export const dynamic = 'force-dynamic';
 // ============================================================================
 // VALIDATION SCHEMAS
 // ============================================================================
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Parse query parameters
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const status = searchParams.get("status");

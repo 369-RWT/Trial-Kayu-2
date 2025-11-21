@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
+
+export const dynamic = 'force-dynamic';
 const createProductSchema = z.object({
   productCode: z.string().min(2).max(20),
   productName: z.string().min(2).max(100),
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const activeOnly = searchParams.get("activeOnly") === "true";
 
     const products = await prisma.product.findMany({
