@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import Link from "next/link";
 import {
   BarChart3,
@@ -11,8 +11,6 @@ import {
 import { formatCurrency, formatNumber, formatPercentage } from "@/lib/utils";
 
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 async function getReportData() {
   // Get inventory summary

@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import LogPurchaseForm from "@/components/forms/LogPurchaseForm";
 
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 async function getFormData() {
   const [woodTypes, suppliers] = await Promise.all([

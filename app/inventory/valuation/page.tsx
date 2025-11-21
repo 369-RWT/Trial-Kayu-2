@@ -1,10 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { formatCurrency, formatNumber, formatDateShort } from "@/lib/utils";
 import { TrendingUp, Package } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 async function getValuationData() {
   // Get latest valuation for each wood type

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { generateLogTag } from "@/lib/utils";
 import { LogPurchaseSchema, validateInput } from "@/lib/validation";
 import { nanoid } from "nanoid";
 import { ratelimit } from "@/lib/ratelimit";
 import { inventoryLedger } from "@/lib/inventory-ledger";
-
-const prisma = new PrismaClient();
 
 /**
  * POST /api/inventory/logs

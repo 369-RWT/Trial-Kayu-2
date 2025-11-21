@@ -1,10 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { TrendingUp } from "lucide-react";
 import { formatNumber, formatCurrency, formatPercentage } from "@/lib/utils";
 
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 async function getCostBreakdownData() {
     // Get batch line items with full cost details

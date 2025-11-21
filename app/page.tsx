@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import Link from "next/link";
 import {
@@ -13,8 +13,6 @@ import {
 } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 async function getDashboardData() {
   const [woodTypes, logs, totalInventoryValue, recentBatches] =

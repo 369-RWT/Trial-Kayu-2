@@ -1,11 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import LogInventoryClient from "@/components/inventory/LogInventoryClient";
 
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 async function getLogInventory() {
   const logs = await prisma.logInventory.findMany({

@@ -1,11 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import ProductionBatchesClient from "@/components/production/ProductionBatchesClient";
 
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 async function getProductionBatches() {
   const batches = await prisma.productionBatch.findMany({
