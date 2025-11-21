@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Calendar, Download, RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
@@ -72,13 +72,7 @@ export default function DailyProductionReportPage() {
     setEndDate(today);
   }, []);
 
-  useEffect(() => {
-    if (status === "authenticated" && startDate && endDate) {
-      fetchReport();
-    }
-  }, [status, startDate, endDate]);
-
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -95,7 +89,13 @@ export default function DailyProductionReportPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (status === "authenticated" && startDate && endDate) {
+      fetchReport();
+    }
+  }, [status, startDate, endDate, fetchReport]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -236,13 +236,12 @@ export default function DailyProductionReportPage() {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="text-sm text-gray-600 mb-1">Overall Efficiency</div>
                 <div
-                  className={`text-2xl font-bold ${
-                    report.summary.overallEfficiency >= 100
+                  className={`text-2xl font-bold ${report.summary.overallEfficiency >= 100
                       ? "text-green-600"
                       : report.summary.overallEfficiency >= 80
-                      ? "text-yellow-600"
-                      : "text-red-600"
-                  }`}
+                        ? "text-yellow-600"
+                        : "text-red-600"
+                    }`}
                 >
                   {formatPercentage(report.summary.overallEfficiency)}
                 </div>
@@ -257,13 +256,12 @@ export default function DailyProductionReportPage() {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="text-sm text-gray-600 mb-1">Avg Waste Rate</div>
                 <div
-                  className={`text-2xl font-bold ${
-                    report.summary.averageWasteRate <= 0.15
+                  className={`text-2xl font-bold ${report.summary.averageWasteRate <= 0.15
                       ? "text-green-600"
                       : report.summary.averageWasteRate <= 0.25
-                      ? "text-yellow-600"
-                      : "text-red-600"
-                  }`}
+                        ? "text-yellow-600"
+                        : "text-red-600"
+                    }`}
                 >
                   {formatPercentage(report.summary.averageWasteRate * 100)}
                 </div>
@@ -357,24 +355,22 @@ export default function DailyProductionReportPage() {
                               {formatNumber(item.actualOutputKubikasi)}
                             </td>
                             <td
-                              className={`px-4 py-3 text-right font-medium ${
-                                item.efficiency >= 100
+                              className={`px-4 py-3 text-right font-medium ${item.efficiency >= 100
                                   ? "text-green-600"
                                   : item.efficiency >= 80
-                                  ? "text-yellow-600"
-                                  : "text-red-600"
-                              }`}
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}
                             >
                               {formatPercentage(item.efficiency)}
                             </td>
                             <td
-                              className={`px-4 py-3 text-right font-medium ${
-                                item.wasteRate <= 0.15
+                              className={`px-4 py-3 text-right font-medium ${item.wasteRate <= 0.15
                                   ? "text-green-600"
                                   : item.wasteRate <= 0.25
-                                  ? "text-yellow-600"
-                                  : "text-red-600"
-                              }`}
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}
                             >
                               {formatPercentage(item.wasteRate * 100)}
                             </td>

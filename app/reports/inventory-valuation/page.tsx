@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Calendar, Download, RefreshCw } from "lucide-react";
@@ -67,13 +67,7 @@ export default function InventoryValuationReportPage() {
     setReportDate(today);
   }, []);
 
-  useEffect(() => {
-    if (status === "authenticated" && reportDate) {
-      fetchReport();
-    }
-  }, [status, reportDate]);
-
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -90,7 +84,13 @@ export default function InventoryValuationReportPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [reportDate]);
+
+  useEffect(() => {
+    if (status === "authenticated" && reportDate) {
+      fetchReport();
+    }
+  }, [status, reportDate, fetchReport]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("id-ID", {
