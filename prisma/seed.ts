@@ -7,9 +7,36 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // =========================================================================
+  // CLEAR EXISTING DATA (Optional - for clean seeding)
+  // =========================================================================
+  console.log('\n🗑️  Clearing existing data...');
+
+  await prisma.auditLog.deleteMany({});
+  await prisma.session.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.systemConfig.deleteMany({});
+  await prisma.supplierWoodPerformance.deleteMany({});
+  await prisma.wasteDeviation.deleteMany({});
+  await prisma.productionOutput.deleteMany({});
+  await prisma.logConsumption.deleteMany({});
+  await prisma.batchLineItem.deleteMany({});
+  await prisma.productionBatch.deleteMany({});
+  await prisma.inventoryLedger.deleteMany({});
+  await prisma.inventoryValuation.deleteMany({});
+  await prisma.logInventory.deleteMany({});
+  await prisma.productPricing.deleteMany({});
+  await prisma.worker.deleteMany({});
+  await prisma.product.deleteMany({});
+  await prisma.machineType.deleteMany({});
+  await prisma.supplier.deleteMany({});
+  await prisma.woodType.deleteMany({});
+
+  console.log('✓ Cleared existing data\n');
+
+  // =========================================================================
   // CREATE DEFAULT USERS (ADMIN, MANAGER, OPERATOR, VIEWER)
   // =========================================================================
-  console.log('\n👤 Creating default users...');
+  console.log('👤 Creating default users...');
 
   const defaultUsers = [
     {
@@ -38,57 +65,105 @@ async function main() {
     },
   ];
 
-  const createdUsers = [];
+  const users = [];
 
   for (const userData of defaultUsers) {
-    const existingUser = await prisma.user.findUnique({
-      where: { email: userData.email },
+    const passwordHash = await bcrypt.hash(userData.password, 12);
+
+    const user = await prisma.user.create({
+      data: {
+        email: userData.email,
+        name: userData.name,
+        passwordHash,
+        role: userData.role,
+        isActive: true,
+      },
     });
 
-    if (!existingUser) {
-      const passwordHash = await bcrypt.hash(userData.password, 12);
-
-      const user = await prisma.user.create({
-        data: {
-          email: userData.email,
-          name: userData.name,
-          passwordHash,
-          role: userData.role,
-          isActive: true,
-        },
-      });
-
-      createdUsers.push({ ...userData, id: user.id });
-    } else {
-      console.log(`  ⚠️  User ${userData.email} already exists, skipping...`);
-    }
+    users.push({ ...userData, id: user.id });
   }
 
-  if (createdUsers.length > 0) {
-    console.log(`✓ Created ${createdUsers.length} users\n`);
-    console.log('╔════════════════════════════════════════════════════════════════╗');
-    console.log('║                    🔐 DEFAULT USER CREDENTIALS                 ║');
+  console.log(`✓ Created ${users.length} users\n`);
+  console.log('╔════════════════════════════════════════════════════════════════╗');
+  console.log('║                    🔐 DEFAULT USER CREDENTIALS                 ║');
+  console.log('╠════════════════════════════════════════════════════════════════╣');
+
+  for (const user of users) {
+    console.log('║                                                                ║');
+    console.log(`║  Role: ${user.role.padEnd(54)}║`);
+    console.log(`║  Email: ${user.email.padEnd(53)}║`);
+    console.log(`║  Password: ${user.password.padEnd(50)}║`);
+    console.log('║                                                                ║');
+    if (user.role === 'ADMIN') {
+      console.log('║  ⚠️  SECURITY WARNING: CHANGE PASSWORD IMMEDIATELY!           ║');
+      console.log('║                                                                ║');
+    }
     console.log('╠════════════════════════════════════════════════════════════════╣');
-
-    for (const user of createdUsers) {
-      console.log('║                                                                ║');
-      console.log(`║  Role: ${user.role.padEnd(54)}║`);
-      console.log(`║  Email: ${user.email.padEnd(53)}║`);
-      console.log(`║  Password: ${user.password.padEnd(50)}║`);
-      console.log('║                                                                ║');
-      if (user.role === 'ADMIN') {
-        console.log('║  ⚠️  SECURITY WARNING: CHANGE PASSWORD IMMEDIATELY!           ║');
-        console.log('║                                                                ║');
-      }
-      console.log('╠════════════════════════════════════════════════════════════════╣');
-    }
-
-    console.log('║  Access the system at: http://localhost:3000/auth/signin      ║');
-    console.log('╚════════════════════════════════════════════════════════════════╝');
-    console.log('');
-  } else {
-    console.log('✓ All users already exist\n');
   }
+
+  console.log('║  Access the system at: http://localhost:3000/auth/signin      ║');
+  console.log('╚════════════════════════════════════════════════════════════════╝');
+  console.log('');
+
+  // =========================================================================
+  // SYSTEM CONFIGURATION
+  // =========================================================================
+  console.log('⚙️  Creating system configuration...');
+
+  const systemConfigs = [
+    {
+      key: 'KUBIKASI_ROUNDING_METHOD',
+      value: 'FLOOR',
+      dataType: 'STRING',
+      category: 'CALCULATION',
+      description: 'Method for rounding kubikasi calculations (FLOOR, CEIL, ROUND)',
+    },
+    {
+      key: 'DEFAULT_WASTE_ALLOCATION_METHOD',
+      value: 'PROPORTIONAL',
+      dataType: 'STRING',
+      category: 'CALCULATION',
+      description: 'Default method for waste cost allocation',
+    },
+    {
+      key: 'SESSION_TIMEOUT_MINUTES',
+      value: '60',
+      dataType: 'NUMBER',
+      category: 'SECURITY',
+      description: 'Session timeout in minutes',
+    },
+    {
+      key: 'PASSWORD_MIN_LENGTH',
+      value: '8',
+      dataType: 'NUMBER',
+      category: 'SECURITY',
+      description: 'Minimum password length',
+    },
+    {
+      key: 'ENABLE_AUDIT_LOGGING',
+      value: 'true',
+      dataType: 'BOOLEAN',
+      category: 'SECURITY',
+      description: 'Enable comprehensive audit logging',
+    },
+    {
+      key: 'COMPANY_NAME',
+      value: 'Al Fath Kayu',
+      dataType: 'STRING',
+      category: 'GENERAL',
+      description: 'Company name for reports and documents',
+    },
+  ];
+
+  for (const config of systemConfigs) {
+    await prisma.systemConfig.create({ data: config });
+  }
+
+  console.log(`✓ Created ${systemConfigs.length} system configuration entries`);
+
+  // =========================================================================
+  // MASTER DATA
+  // =========================================================================
 
   // Create Wood Types
   const woodTypes = await Promise.all([
@@ -308,7 +383,10 @@ async function main() {
 
   console.log(`✓ Created ${pricingData.length} product pricing entries`);
 
-  // Create Sample Log Inventory
+  // =========================================================================
+  // LOG INVENTORY & LEDGERS
+  // =========================================================================
+
   const currentDate = new Date('2024-11-02');
 
   const logs = await Promise.all([
@@ -410,7 +488,28 @@ async function main() {
 
   console.log(`✓ Created ${logs.length} log inventory entries`);
 
+  // Create Inventory Ledgers for purchases
+  let ledgerCount = 0;
+  for (const log of logs) {
+    await prisma.inventoryLedger.create({
+      data: {
+        woodTypeId: log.woodTypeId,
+        transactionDate: log.purchaseDate,
+        type: 'IN',
+        category: 'PURCHASE',
+        referenceId: log.logTag,
+        kubikasiChange: log.kubikasiFinal,
+        runningBalance: log.kubikasiFinal,
+        notes: `Purchase from supplier - ${log.jumlahLog} logs`,
+      },
+    });
+    ledgerCount++;
+  }
+
+  console.log(`✓ Created ${ledgerCount} inventory ledger entries`);
+
   // Create Inventory Valuations for each wood type
+  let valuationCount = 0;
   for (const woodType of woodTypes) {
     const woodLogs = logs.filter(log => log.woodTypeId === woodType.id);
     const totalKubikasi = woodLogs.reduce((sum, log) => sum + log.kubikasiFinal, 0);
@@ -432,11 +531,210 @@ async function main() {
         wacPerKubik: wac,
       },
     });
+    valuationCount++;
   }
 
-  console.log('✓ Created inventory valuations for all wood types');
+  console.log(`✓ Created ${valuationCount} inventory valuations`);
 
-  console.log('✅ Seeding completed successfully!');
+  // =========================================================================
+  // PRODUCTION BATCHES & LINE ITEMS
+  // =========================================================================
+
+  console.log('\n🏭 Creating production batches...');
+
+  const batch1 = await prisma.productionBatch.create({
+    data: {
+      id: 'B-20241103-001',
+      productionDate: new Date('2024-11-03'),
+      shift: 1,
+      status: 'Completed',
+    },
+  });
+
+  // Batch Line Item 1: Jati Horizontal Beams
+  const batchLine1 = await prisma.batchLineItem.create({
+    data: {
+      batchId: batch1.id,
+      lineNumber: 1,
+      woodTypeId: woodTypes[0].id, // Jati
+      productId: products[0].id, // Horizontal Beams
+      targetKubikasi: 20.0,
+      actualOutputKubikasi: 18.5,
+      totalInputKubikasi: 22.0,
+      totalWasteKubikasi: 3.5,
+      wacPerKubik: 4000000,
+      materialCostDirect: 74000000, // 18.5 * 4000000
+      materialCostWaste: 14000000, // 3.5 * 4000000
+      materialCostTotal: 88000000,
+      materialCostPerKubik: 4756756.76, // 88000000 / 18.5
+      workerId: workers[0].id,
+      machineTypeId: machines[0].id,
+      sellingPricePerKubik: 5500000,
+    },
+  });
+
+  // Log Consumption for Batch Line 1
+  await prisma.logConsumption.create({
+    data: {
+      batchLineId: batchLine1.id,
+      logTag: logs[0].logTag, // JT log
+      woodTypeId: woodTypes[0].id,
+      supplierId: suppliers[0].id,
+      purchaseDate: logs[0].purchaseDate,
+      kubikasiConsumed: 22.0,
+      wacPerKubik: 4000000,
+      materialCost: 88000000,
+    },
+  });
+
+  // Production Output for Batch Line 1
+  await prisma.productionOutput.create({
+    data: {
+      batchLineId: batchLine1.id,
+      woodTypeId: woodTypes[0].id,
+      productId: products[0].id,
+      kubikasiProduced: 18.5,
+      materialCostDirect: 74000000,
+      materialCostAllocatedWaste: 14000000,
+      totalMaterialCost: 88000000,
+    },
+  });
+
+  // Waste Deviation for Batch Line 1
+  await prisma.wasteDeviation.create({
+    data: {
+      batchLineId: batchLine1.id,
+      logTag: logs[0].logTag,
+      woodTypeId: woodTypes[0].id,
+      supplierId: suppliers[0].id,
+      workerId: workers[0].id,
+      wasteType: 'Crack',
+      kubikasiWaste: 3.5,
+      wasteCost: 14000000,
+      disposition: 'Scrap',
+      recoveryValue: 0,
+      netWasteCost: 14000000,
+      notes: 'Natural cracks found during processing',
+    },
+  });
+
+  // Update log inventory
+  await prisma.logInventory.update({
+    where: { logTag: logs[0].logTag },
+    data: {
+      remainingKubikasi: logs[0].kubikasiFinal - 22.0,
+      status: 'Partial',
+    },
+  });
+
+  // Create inventory ledger for consumption
+  await prisma.inventoryLedger.create({
+    data: {
+      woodTypeId: woodTypes[0].id,
+      transactionDate: new Date('2024-11-03'),
+      type: 'OUT',
+      category: 'PRODUCTION',
+      referenceId: batch1.id,
+      kubikasiChange: -22.0,
+      runningBalance: logs[0].kubikasiFinal - 22.0,
+      notes: `Production batch ${batch1.id} - Line 1`,
+    },
+  });
+
+  console.log('✓ Created production batch with line items, consumptions, and outputs');
+
+  // =========================================================================
+  // SUPPLIER PERFORMANCE
+  // =========================================================================
+
+  console.log('\n📊 Creating supplier performance metrics...');
+
+  await prisma.supplierWoodPerformance.create({
+    data: {
+      supplierId: suppliers[0].id,
+      woodTypeId: woodTypes[0].id,
+      periodStart: new Date('2024-11-01'),
+      periodEnd: new Date('2024-11-30'),
+      totalKubikasi: 22.0,
+      totalWasteKubikasi: 3.5,
+      wasteRate: 15.91, // (3.5 / 22.0) * 100
+      qualityScore: 85,
+      bentWoodPct: 0,
+      hollowCenterPct: 0,
+      crackPct: 15.91,
+    },
+  });
+
+  console.log('✓ Created supplier performance metrics');
+
+  // =========================================================================
+  // AUDIT LOGS
+  // =========================================================================
+
+  console.log('\n📝 Creating audit logs...');
+
+  const auditLogs = [
+    {
+      userId: users[0].id,
+      action: 'CREATE',
+      entity: 'LogInventory',
+      entityId: logs[0].logTag,
+      changes: JSON.stringify({ kubikasiFinal: 100.0, status: 'Available' }),
+      ipAddress: '127.0.0.1',
+      userAgent: 'Seeder Script',
+    },
+    {
+      userId: users[0].id,
+      action: 'CREATE',
+      entity: 'ProductionBatch',
+      entityId: batch1.id,
+      changes: JSON.stringify({ status: 'Completed', shift: 1 }),
+      ipAddress: '127.0.0.1',
+      userAgent: 'Seeder Script',
+    },
+    {
+      userId: users[0].id,
+      action: 'UPDATE',
+      entity: 'LogInventory',
+      entityId: logs[0].logTag,
+      changes: JSON.stringify({
+        remainingKubikasi: { from: 100.0, to: 78.0 },
+        status: { from: 'Available', to: 'Partial' }
+      }),
+      ipAddress: '127.0.0.1',
+      userAgent: 'Seeder Script',
+    },
+  ];
+
+  for (const auditLog of auditLogs) {
+    await prisma.auditLog.create({ data: auditLog });
+  }
+
+  console.log(`✓ Created ${auditLogs.length} audit log entries`);
+
+  // =========================================================================
+  // SUMMARY
+  // =========================================================================
+
+  console.log('\n');
+  console.log('╔════════════════════════════════════════════════════════════════╗');
+  console.log('║                    ✅ SEEDING COMPLETED                        ║');
+  console.log('╠════════════════════════════════════════════════════════════════╣');
+  console.log(`║  Users: ${users.length.toString().padEnd(57)}║`);
+  console.log(`║  Wood Types: ${woodTypes.length.toString().padEnd(52)}║`);
+  console.log(`║  Suppliers: ${suppliers.length.toString().padEnd(53)}║`);
+  console.log(`║  Products: ${products.length.toString().padEnd(54)}║`);
+  console.log(`║  Workers: ${workers.length.toString().padEnd(55)}║`);
+  console.log(`║  Machine Types: ${machines.length.toString().padEnd(49)}║`);
+  console.log(`║  Product Pricing: ${pricingData.length.toString().padEnd(47)}║`);
+  console.log(`║  Log Inventory: ${logs.length.toString().padEnd(49)}║`);
+  console.log(`║  Inventory Ledgers: ${ledgerCount.toString().padEnd(45)}║`);
+  console.log(`║  Inventory Valuations: ${valuationCount.toString().padEnd(42)}║`);
+  console.log(`║  Production Batches: 1${' '.padEnd(44)}║`);
+  console.log(`║  System Configs: ${systemConfigs.length.toString().padEnd(48)}║`);
+  console.log(`║  Audit Logs: ${auditLogs.length.toString().padEnd(52)}║`);
+  console.log('╚════════════════════════════════════════════════════════════════╝');
+  console.log('');
 }
 
 main()
